@@ -1,6 +1,6 @@
 const { useState, useEffect, useMemo, useRef } = React;
 
-
+// Helper to handle Framer Motion UMD
 const Motion = window.Motion || {
   motion: {
     div: (props) => <div {...props} />,
@@ -14,7 +14,7 @@ const Motion = window.Motion || {
 };
 const { motion, AnimatePresence } = Motion;
 
-
+// Mock Data Produk
 const PRODUCTS = [
   {
     id: 1,
@@ -29,7 +29,7 @@ const PRODUCTS = [
     },
     gambar: {
       depan: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=1000&auto=format&fit=crop",
-    }
+       }
   },
   {
     id: 2,
@@ -44,7 +44,7 @@ const PRODUCTS = [
     },
     gambar: {
       depan: "https://images.unsplash.com/photo-1575425186775-b8de9a427e67?q=80&w=1000&auto=format&fit=crop",
-    }
+      }
   },
   {
     id: 3,
@@ -59,7 +59,7 @@ const PRODUCTS = [
     },
     gambar: {
       depan: "https://images.unsplash.com/photo-1521369909029-2afed882baee?q=80&w=1000&auto=format&fit=crop",
-    }
+      }
   },
   {
     id: 4,
@@ -74,7 +74,7 @@ const PRODUCTS = [
     },
     gambar: {
       depan: "https://images.unsplash.com/photo-1596455607563-ad6193f76b17?q=80&w=1000&auto=format&fit=crop",
-    }
+      }
   },
   {
     id: 5,
@@ -89,7 +89,7 @@ const PRODUCTS = [
     },
     gambar: {
       depan: "https://images.unsplash.com/photo-1618354691792-d1d42acfd860?q=80&w=1000&auto=format&fit=crop",
-    }
+      }
   },
   {
     id: 6,
@@ -104,7 +104,7 @@ const PRODUCTS = [
     },
     gambar: {
       depan: "https://images.unsplash.com/photo-1514327605112-b887c0e61c0a?q=80&w=1000&auto=format&fit=crop",
-    }
+      }
   },
   {
     id: 7,
@@ -119,7 +119,7 @@ const PRODUCTS = [
     },
     gambar: {
       depan: "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?q=80&w=1000&auto=format&fit=crop",
-    }
+       }
   },
   {
     id: 8,
@@ -134,7 +134,7 @@ const PRODUCTS = [
     },
     gambar: {
       depan: "https://images.unsplash.com/photo-1556306535-0f09a537f0a3?q=80&w=1000&auto=format&fit=crop",
-    }
+       }
   }
 ];
 
@@ -148,7 +148,10 @@ const App = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeAngle, setActiveAngle] = useState("depan");
   const [scrollPos, setScrollPos] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [userName, setUserName] = useState("");
 
+  // Recommendations Loop Logic (3 items)
   const recs = useMemo(() => PRODUCTS.slice(0, 3), []);
   const [activeRec, setActiveRec] = useState(0);
 
@@ -162,6 +165,14 @@ const App = () => {
     return PRODUCTS.filter(p => p.nama.toLowerCase().includes(search.toLowerCase()));
   }, [search]);
 
+  const showNotification = (message) => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, message }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 3000);
+  };
+
   const addToCart = (product) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
@@ -170,6 +181,17 @@ const App = () => {
       }
       return [...prev, { ...product, qty: 1 }];
     });
+    showNotification(`${product.nama} ditambahkan ke keranjang!`);
+  };
+
+  const updateQuantity = (id, delta) => {
+    setCart(prev => prev.map(item => {
+      if (item.id === id) {
+        const newQty = Math.max(0, item.qty + delta);
+        return { ...item, qty: newQty };
+      }
+      return item;
+    }).filter(item => item.qty > 0));
   };
 
   const removeFromCart = (id) => {
@@ -177,7 +199,24 @@ const App = () => {
   };
 
   const buyNowWA = (product) => {
-    const message = `Halo TKTM, saya ingin membeli produk berikut:\n\nNama: ${product.nama}\nHarga: Rp ${product.harga.toLocaleString('id-ID')}\n\nTerima kasih!`;
+    const inCart = cart.find(item => item.id === product.id);
+    const qty = inCart ? inCart.qty : 1;
+    const total = (product.harga * qty).toLocaleString('id-ID');
+    const message = `Halo TKTM, saya ingin membeli produk berikut:\n\nNama: ${product.nama}\nJumlah: ${qty}\nTotal: Rp ${total}\n\nTerima kasih!`;
+    const url = `https://wa.me/${WA_NUMBER.replace('+', '')}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+    setSelectedProduct(null); // Tutup modal jika sedang terbuka
+  };
+
+  const checkoutCartWA = () => {
+    if (cart.length === 0) return;
+    if (!userName.trim()) {
+      showNotification("Silakan masukkan nama Anda!");
+      return;
+    }
+    let list = cart.map(item => `- ${item.nama} (${item.qty}x)`).join('\n');
+    const total = totalHarga.toLocaleString('id-ID');
+    const message = `Halo TKTM, saya ingin memesan:\n\nNama Pembeli: ${userName}\n\n${list}\n\nTotal: Rp ${total}\n\nTerima kasih!`;
     const url = `https://wa.me/${WA_NUMBER.replace('+', '')}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -219,6 +258,7 @@ const App = () => {
         </div>
       </nav>
 
+      {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden bg-black">
         <div className="absolute inset-0 opacity-50" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1533055640609-24b498dfd74c?q=80&w=1920&auto=format&fit=crop')`, backgroundPosition: 'center', backgroundSize: 'cover', transform: `translateY(${scrollPos * 0.5}px)` }} />
         <div className="relative z-10 text-center px-4">
@@ -230,6 +270,7 @@ const App = () => {
         </div>
       </section>
 
+      {/* Rekomendasi 3 - Loop Slider */}
       <section className="py-24 px-6 bg-white overflow-hidden">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -274,6 +315,7 @@ const App = () => {
         </div>
       </section>
 
+      {/* Katalog Produk (3 Kolom) */}
       <section id="produk" className="py-20 px-6 bg-gray-50">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
@@ -288,27 +330,37 @@ const App = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProducts.map(product => (
-              <motion.div layout key={product.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all group">
-                <div className="relative aspect-square overflow-hidden cursor-pointer" onClick={() => { setSelectedProduct(product); setActiveAngle("depan"); }}>
-                  <img src={product.gambar.depan} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute top-4 right-4 bg-white/90 p-2 rounded-full shadow-lg"><LucideIcon name="info" className="w-5 h-5" /></div>
-                </div>
-                <div className="p-6">
-                  <p className="text-xs text-gray-400 font-bold uppercase">{product.kategori}</p>
-                  <h4 className="text-lg font-bold mt-1 mb-2">{product.nama}</h4>
-                  <p className="text-accent font-black text-xl mb-4">Rp {product.harga.toLocaleString('id-ID')}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => addToCart(product)} className="bg-gray-100 text-brand py-2.5 rounded-xl font-bold text-sm hover:bg-brand hover:text-white transition-all">Keranjang</button>
-                    <button onClick={() => buyNowWA(product)} className="bg-green-500 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-green-600 transition-all">Beli Sekarang</button>
+            {filteredProducts.map(product => {
+              const inCart = cart.find(item => item.id === product.id);
+              const displayPrice = inCart ? product.harga * inCart.qty : product.harga;
+              return (
+                <motion.div layout key={product.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all group">
+                  <div className="relative aspect-square overflow-hidden cursor-pointer" onClick={() => { setSelectedProduct(product); setActiveAngle("depan"); }}>
+                    <img src={product.gambar.depan} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <div className="absolute top-4 right-4 bg-white/90 p-2 rounded-full shadow-lg"><LucideIcon name="info" className="w-5 h-5" /></div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="p-6">
+                    <p className="text-xs text-gray-400 font-bold uppercase">{product.kategori}</p>
+                    <h4 className="text-lg font-bold mt-1 mb-2">{product.nama}</h4>
+                    <p className="text-accent font-black text-xl mb-4">
+                      {inCart && <span className="text-xs text-gray-400 block font-normal">Total ({inCart.qty}x)</span>}
+                      Rp {displayPrice.toLocaleString('id-ID')}
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      <button onClick={() => addToCart(product)} className="w-full bg-gray-100 text-brand py-2.5 rounded-xl font-bold text-sm hover:bg-brand hover:text-white transition-all">
+                        {inCart ? 'Tambah Lagi' : 'Tambah ke Keranjang'}
+                      </button>
+                      <button onClick={() => buyNowWA(product)} className="w-full bg-green-500 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-green-600 transition-all">Beli Sekarang</button>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
 
+      {/* Footer */}
       <footer className="bg-brand text-white py-16 px-6">
         <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-12">
           <div><h4 className="text-3xl font-black mb-6">TKTM</h4><p className="text-gray-400">Topiku Topimu. Platform e-commerce topi nomor satu dengan kualitas tanpa kompromi.</p></div>
@@ -327,6 +379,7 @@ const App = () => {
         </div>
       </footer>
 
+      {/* Menu Drawer (Mobile) */}
       <AnimatePresence>
         {isMenuOpen && (
           <>
@@ -340,6 +393,8 @@ const App = () => {
               <nav className="flex flex-col gap-6 mb-auto">
                 <a href="#" onClick={() => setIsMenuOpen(false)} className="text-xl font-bold hover:text-accent transition-colors">Beranda</a>
                 <a href="#produk" onClick={() => setIsMenuOpen(false)} className="text-xl font-bold hover:text-accent transition-colors">Koleksi</a>
+                <a href="#footer" onClick={() => setIsMenuOpen(false)} className="text-xl font-bold hover:text-accent transition-colors">Tentang Kami</a>
+              </nav>
 
               <div className="pt-10 border-t">
                 <h5 className="font-bold mb-4 text-sm uppercase tracking-widest text-gray-400">Hubungi Kami</h5>
@@ -360,6 +415,7 @@ const App = () => {
         )}
       </AnimatePresence>
 
+      {/* Cart Drawer */}
       <AnimatePresence>
         {isCartOpen && (
           <>
@@ -369,19 +425,40 @@ const App = () => {
                 <h3 className="text-2xl font-bold">Keranjang</h3>
                 <button onClick={() => setIsCartOpen(false)}><LucideIcon name="x" className="w-6 h-6" /></button>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-4">
+              <div className="flex-1 overflow-y-auto space-y-6">
                 {cart.length === 0 ? <p className="text-gray-400 text-center py-10">Keranjang kosong</p> : cart.map(item => (
-                  <div key={item.id} className="flex gap-4 items-center border-b pb-4">
-                    <img src={item.gambar.depan} className="w-16 h-16 object-cover rounded-lg" />
-                    <div className="flex-1"><h5 className="font-bold">{item.nama}</h5><p className="text-sm text-gray-500">{item.qty} x Rp {item.harga.toLocaleString('id-ID')}</p></div>
-                    <button onClick={() => removeFromCart(item.id)} className="text-red-500"><LucideIcon name="trash-2" className="w-5 h-5" /></button>
+                  <div key={item.id} className="flex gap-4 items-center border-b border-gray-50 pb-4">
+                    <img src={item.gambar.depan} className="w-20 h-20 object-cover rounded-xl shadow-sm" />
+                    <div className="flex-1">
+                      <h5 className="font-bold text-brand">{item.nama}</h5>
+                      <p className="text-sm text-accent font-bold mb-2">Rp {item.harga.toLocaleString('id-ID')}</p>
+                      <div className="flex items-center gap-3 bg-gray-100 w-fit rounded-lg p-1">
+                        <button onClick={() => updateQuantity(item.id, -1)} className="p-1.5 bg-white rounded shadow-sm hover:text-red-500"><LucideIcon name="minus" className="w-3 h-3" /></button>
+                        <span className="text-xs font-bold w-4 text-center">{item.qty}</span>
+                        <button onClick={() => updateQuantity(item.id, 1)} className="p-1.5 bg-white rounded shadow-sm hover:text-accent"><LucideIcon name="plus" className="w-3 h-3" /></button>
+                      </div>
+                    </div>
+                    <button onClick={() => removeFromCart(item.id)} className="text-gray-300 hover:text-red-500 transition-colors p-2"><LucideIcon name="trash-2" className="w-5 h-5" /></button>
                   </div>
                 ))}
               </div>
               {cart.length > 0 && (
-                <div className="pt-6 border-t mt-auto">
-                  <div className="flex justify-between text-xl font-bold mb-4"><span>Total</span><span>Rp {totalHarga.toLocaleString('id-ID')}</span></div>
-                  <button className="w-full bg-brand text-white py-4 rounded-xl font-bold">Checkout via WhatsApp</button>
+                <div className="pt-6 border-t space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Nama Lengkap</label>
+                    <input
+                      type="text"
+                      placeholder="Masukkan nama Anda..."
+                      className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 ring-accent"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex justify-between items-end pb-2">
+                    <span className="text-gray-400 text-sm">Total Pembayaran</span>
+                    <span className="text-2xl font-black text-brand">Rp {totalHarga.toLocaleString('id-ID')}</span>
+                  </div>
+                  <button onClick={checkoutCartWA} className="w-full bg-black text-white py-4 rounded-xl font-bold shadow-xl hover:bg-zinc-800 transition-all active:scale-[0.98]">Checkout via WhatsApp</button>
                 </div>
               )}
             </motion.div>
@@ -389,6 +466,7 @@ const App = () => {
         )}
       </AnimatePresence>
 
+      {/* Product Modal (With Angle Change) */}
       <AnimatePresence>
         {selectedProduct && (
           <>
@@ -427,7 +505,7 @@ const App = () => {
                   <div className="text-sm"><p className="text-gray-400 mb-1">Fitur</p><p className="font-medium text-brand italic">{selectedProduct.info.fitur}</p></div>
                 </div>
                 <div className="grid gap-3">
-                  <button onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }} className="w-full bg-brand text-white py-4 rounded-xl font-bold shadow-lg hover:bg-black transition-all">Tambah ke Keranjang</button>
+                  <button onClick={() => { addToCart(selectedProduct); }} className="w-full bg-brand text-white py-4 rounded-xl font-bold shadow-lg hover:bg-black transition-all">Tambah ke Keranjang</button>
                   <button onClick={() => buyNowWA(selectedProduct)} className="w-full bg-green-500 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-green-600 transition-all"><LucideIcon name="phone" className="w-5 h-5" /> Beli via WhatsApp</button>
                 </div>
               </div>
@@ -435,6 +513,26 @@ const App = () => {
           </>
         )}
       </AnimatePresence>
+
+      {/* Notifications (Toasts) */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-3 items-center pointer-events-none w-full max-w-xs">
+        <AnimatePresence>
+          {notifications.map(n => (
+            <motion.div
+              key={n.id}
+              initial={{ opacity: 0, y: 50, scale: 0.3 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+              className="bg-brand text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 pointer-events-auto border border-white/10"
+            >
+              <div className="bg-accent rounded-full p-1">
+                <LucideIcon name="check" className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm font-bold">{n.message}</span>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
