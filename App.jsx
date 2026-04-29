@@ -1,6 +1,5 @@
 const { useState, useEffect, useMemo, useRef } = React;
 
-// Helper to handle Framer Motion UMD
 const Motion = window.Motion || {
   motion: {
     div: (props) => <div {...props} />,
@@ -14,7 +13,7 @@ const Motion = window.Motion || {
 };
 const { motion, AnimatePresence } = Motion;
 
-// Mock Data Produk
+// Data Produk
 const PRODUCTS = [
   {
     id: 1,
@@ -270,7 +269,7 @@ const App = () => {
         </div>
       </section>
 
-      {/* Rekomendasi 3 - Loop Slider */}
+      {/* Rekomendasi */}
       <section className="py-24 px-6 bg-white overflow-hidden">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -315,7 +314,7 @@ const App = () => {
         </div>
       </section>
 
-      {/* Katalog Produk (3 Kolom) */}
+      {/* Katalog Produk */}
       <section id="produk" className="py-20 px-6 bg-gray-50">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
@@ -465,7 +464,7 @@ const App = () => {
         )}
       </AnimatePresence>
 
-      {/* Product Modal (With Angle Change) */}
+      {/* Product Modal*/}
       <AnimatePresence>
         {selectedProduct && (
           <>
